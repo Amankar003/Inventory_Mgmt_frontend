@@ -1,10 +1,3 @@
-/**
- * App.jsx - Main Application Component
- *
- * Uses simple state-based navigation (no react-router).
- * The active page is tracked with a "currentPage" state variable.
- */
-
 import { useState } from "react";
 import Dashboard from "./pages/Dashboard";
 import ProductsPage from "./pages/ProductsPage";
@@ -12,28 +5,20 @@ import CustomersPage from "./pages/CustomersPage";
 import OrdersPage from "./pages/OrdersPage";
 
 function App() {
-  // Track which page is currently shown
   const [currentPage, setCurrentPage] = useState("dashboard");
 
-  // Render the correct page based on state
   function renderPage() {
     switch (currentPage) {
-      case "dashboard":
-        return <Dashboard />;
-      case "products":
-        return <ProductsPage />;
-      case "customers":
-        return <CustomersPage />;
-      case "orders":
-        return <OrdersPage />;
-      default:
-        return <Dashboard />;
+      case "dashboard": return <Dashboard />;
+      case "products": return <ProductsPage />;
+      case "customers": return <CustomersPage />;
+      case "orders": return <OrdersPage />;
+      default: return <Dashboard />;
     }
   }
 
   return (
     <div className="app">
-      {/* Sidebar Navigation */}
       <aside className="sidebar">
         <div className="sidebar-brand">
           <span className="brand-icon">📊</span>
@@ -74,7 +59,6 @@ function App() {
         </div>
       </aside>
 
-      {/* Main Content Area */}
       <main className="main-content">
         {renderPage()}
       </main>

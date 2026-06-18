@@ -1,65 +1,43 @@
-/**
- * ProductsPage.jsx - Products Management Page
- *
- * Features:
- * - List all products in a table
- * - Add a new product via a form
- * - Edit an existing product (inline form)
- * - Delete a product
- */
-
 import { useState, useEffect } from "react";
 import api from "../api";
 
 function ProductsPage() {
-  // State for the list of products
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // State for the add/edit form
   const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState(null); // null = adding, number = editing
+  const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
-    name: "",
-    sku: "",
-    price: "",
-    stock_quantity: "",
+    name: "", sku: "", price: "", stock_quantity: "",
   });
 
-  // Fetch products when the component loads
-  useEffect(() => {
-    fetchProducts();
-  }, []);
+  useEffect(() => { loadProducts(); }, []);
 
-  async function fetchProducts() {
+  async function loadProducts() {
     try {
       setLoading(true);
-      const response = await api.get("/products/");
-      setProducts(response.data);
+      const res = await api.get("/products/");
+      setProducts(res.data);
     } catch (err) {
       setError("Failed to fetch products");
-      console.error(err);
     } finally {
       setLoading(false);
     }
   }
 
-  // Handle form input changes
   function handleChange(e) {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   }
 
-  // Open the form to add a new product
-  function handleAdd() {
+  function openAddForm() {
     setEditingId(null);
     setFormData({ name: "", sku: "", price: "", stock_quantity: "" });
     setShowForm(true);
     setError("");
   }
 
-  // Open the form to edit an existing product
-  function handleEdit(product) {
+  function openEditForm(product) {
     setEditingId(product.id);
     setFormData({
       name: product.name,
@@ -71,12 +49,10 @@ function ProductsPage() {
     setError("");
   }
 
-  // Submit the form (create or update)
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
 
-    // Build the request body
     const body = {
       name: formData.name,
       sku: formData.sku,
@@ -86,46 +62,29 @@ function ProductsPage() {
 
     try {
       if (editingId) {
-        // Update existing product
         await api.put(`/products/${editingId}`, body);
       } else {
-        // Create new product
         await api.post("/products/", body);
       }
-      // Refresh the list and close the form
-      await fetchProducts();
+      await loadProducts();
       setShowForm(false);
-      setFormData({ name: "", sku: "", price: "", stock_quantity: "" });
       setEditingId(null);
     } catch (err) {
-      // Show the error message from the backend
-      const message = err.response?.data?.detail || "Something went wrong";
-      setError(message);
+      setError(err.response?.data?.detail || "Something went wrong");
     }
   }
 
-  // Delete a product
-  async function handleDelete(productId) {
+  async function handleDelete(id) {
     if (!window.confirm("Are you sure you want to delete this product?")) return;
     try {
-      await api.delete(`/products/${productId}`);
-      await fetchProducts();
+      await api.delete(`/products/${id}`);
+      await loadProducts();
     } catch (err) {
-      const message = err.response?.data?.detail || "Failed to delete product";
-      setError(message);
+      setError(err.response?.data?.detail || "Failed to delete product");
     }
   }
 
-  // Cancel form
-  function handleCancel() {
-    setShowForm(false);
-    setEditingId(null);
-    setError("");
-  }
-
-  if (loading) {
-    return <div className="loading">Loading products...</div>;
-  }
+  if (loading) return <div className="loading">Loading products...</div>;
 
   return (
     <div className="page">
@@ -134,15 +93,11 @@ function ProductsPage() {
           <h1>Products</h1>
           <p className="page-subtitle">Manage your product inventory</p>
         </div>
-        <button className="btn btn-primary" onClick={handleAdd}>
-          + Add Product
-        </button>
+        <button className="btn btn-primary" onClick={openAddForm}>+ Add Product</button>
       </div>
 
-      {/* Error message */}
       {error && <div className="error-message">{error}</div>}
 
-      {/* Add/Edit Form */}
       {showForm && (
         <div className="form-card">
           <h2>{editingId ? "Edit Product" : "Add New Product"}</h2>
@@ -150,61 +105,31 @@ function ProductsPage() {
             <div className="form-grid">
               <div className="form-group">
                 <label htmlFor="name">Product Name</label>
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="e.g. Wireless Mouse"
-                  required
-                />
+                <input id="name" name="name" type="text" value={formData.name}
+                  onChange={handleChange} placeholder="e.g. Wireless Mouse" required />
               </div>
               <div className="form-group">
                 <label htmlFor="sku">SKU</label>
-                <input
-                  id="sku"
-                  name="sku"
-                  type="text"
-                  value={formData.sku}
-                  onChange={handleChange}
-                  placeholder="e.g. WM-001"
-                  required
-                />
+                <input id="sku" name="sku" type="text" value={formData.sku}
+                  onChange={handleChange} placeholder="e.g. WM-001" required />
               </div>
               <div className="form-group">
                 <label htmlFor="price">Price ($)</label>
-                <input
-                  id="price"
-                  name="price"
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  value={formData.price}
-                  onChange={handleChange}
-                  placeholder="e.g. 29.99"
-                  required
-                />
+                <input id="price" name="price" type="number" step="0.01" min="0.01"
+                  value={formData.price} onChange={handleChange} placeholder="e.g. 29.99" required />
               </div>
               <div className="form-group">
                 <label htmlFor="stock_quantity">Stock Quantity</label>
-                <input
-                  id="stock_quantity"
-                  name="stock_quantity"
-                  type="number"
-                  min="0"
-                  value={formData.stock_quantity}
-                  onChange={handleChange}
-                  placeholder="e.g. 100"
-                  required
-                />
+                <input id="stock_quantity" name="stock_quantity" type="number" min="0"
+                  value={formData.stock_quantity} onChange={handleChange} placeholder="e.g. 100" required />
               </div>
             </div>
             <div className="form-actions">
               <button type="submit" className="btn btn-primary">
                 {editingId ? "Update" : "Create"}
               </button>
-              <button type="button" className="btn btn-secondary" onClick={handleCancel}>
+              <button type="button" className="btn btn-secondary"
+                onClick={() => { setShowForm(false); setEditingId(null); setError(""); }}>
                 Cancel
               </button>
             </div>
@@ -212,7 +137,6 @@ function ProductsPage() {
         </div>
       )}
 
-      {/* Products Table */}
       {products.length === 0 ? (
         <div className="empty-state">
           <p>No products yet. Click "Add Product" to get started.</p>
@@ -222,48 +146,27 @@ function ProductsPage() {
           <table>
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>SKU</th>
-                <th>Price</th>
-                <th>Stock</th>
-                <th>Created</th>
-                <th>Actions</th>
+                <th>ID</th><th>Name</th><th>SKU</th><th>Price</th>
+                <th>Stock</th><th>Created</th><th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {products.map((product) => (
-                <tr key={product.id}>
-                  <td>{product.id}</td>
-                  <td>{product.name}</td>
-                  <td><code>{product.sku}</code></td>
-                  <td>${product.price.toFixed(2)}</td>
+              {products.map((p) => (
+                <tr key={p.id}>
+                  <td>{p.id}</td>
+                  <td>{p.name}</td>
+                  <td><code>{p.sku}</code></td>
+                  <td>${p.price.toFixed(2)}</td>
                   <td>
-                    <span
-                      className={`badge ${
-                        product.stock_quantity < 10
-                          ? "badge-danger"
-                          : "badge-success"
-                      }`}
-                    >
-                      {product.stock_quantity}
+                    <span className={`badge ${p.stock_quantity < 10 ? "badge-danger" : "badge-success"}`}>
+                      {p.stock_quantity}
                     </span>
                   </td>
-                  <td>{new Date(product.created_at).toLocaleDateString()}</td>
+                  <td>{new Date(p.created_at).toLocaleDateString()}</td>
                   <td>
                     <div className="action-buttons">
-                      <button
-                        className="btn btn-small btn-edit"
-                        onClick={() => handleEdit(product)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="btn btn-small btn-delete"
-                        onClick={() => handleDelete(product.id)}
-                      >
-                        Delete
-                      </button>
+                      <button className="btn btn-small btn-edit" onClick={() => openEditForm(p)}>Edit</button>
+                      <button className="btn btn-small btn-delete" onClick={() => handleDelete(p.id)}>Delete</button>
                     </div>
                   </td>
                 </tr>

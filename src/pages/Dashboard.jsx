@@ -1,52 +1,36 @@
-/**
- * Dashboard.jsx - Dashboard Page
- *
- * Shows summary statistics:
- * - Total products
- * - Total customers
- * - Total orders
- * - Low stock alerts
- */
-
 import { useState, useEffect } from "react";
 import api from "../api";
 
 function Dashboard() {
-  // State for storing counts
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch data when the component loads
   useEffect(() => {
-    fetchDashboardData();
+    loadDashboard();
   }, []);
 
-  async function fetchDashboardData() {
+  async function loadDashboard() {
     try {
       setLoading(true);
-      // Fetch all data in parallel using Promise.all
-      const [productsRes, customersRes, ordersRes] = await Promise.all([
+      const [prodRes, custRes, ordRes] = await Promise.all([
         api.get("/products/"),
         api.get("/customers/"),
         api.get("/orders/"),
       ]);
-      setProducts(productsRes.data);
-      setCustomers(customersRes.data);
-      setOrders(ordersRes.data);
-    } catch (error) {
-      console.error("Error fetching dashboard data:", error);
+      setProducts(prodRes.data);
+      setCustomers(custRes.data);
+      setOrders(ordRes.data);
+    } catch (err) {
+      console.error("Failed to load dashboard:", err);
     } finally {
       setLoading(false);
     }
   }
 
-  // Find products with low stock (less than 10 units)
-  const lowStockProducts = products.filter((p) => p.stock_quantity < 10);
-
-  // Calculate total revenue from all orders
-  const totalRevenue = orders.reduce((sum, order) => sum + order.total_amount, 0);
+  const lowStock = products.filter((p) => p.stock_quantity < 10);
+  const totalRevenue = orders.reduce((sum, o) => sum + o.total_amount, 0);
 
   if (loading) {
     return <div className="loading">Loading dashboard...</div>;
@@ -57,7 +41,6 @@ function Dashboard() {
       <h1>Dashboard</h1>
       <p className="page-subtitle">Overview of your inventory and orders</p>
 
-      {/* Summary Cards */}
       <div className="stats-grid">
         <div className="stat-card stat-card-blue">
           <div className="stat-icon">📦</div>
@@ -92,8 +75,7 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* Low Stock Alert */}
-      {lowStockProducts.length > 0 && (
+      {lowStock.length > 0 && (
         <div className="alert-section">
           <h2>⚠️ Low Stock Alerts</h2>
           <div className="table-container">
@@ -106,13 +88,11 @@ function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {lowStockProducts.map((product) => (
-                  <tr key={product.id}>
-                    <td>{product.name}</td>
-                    <td><code>{product.sku}</code></td>
-                    <td>
-                      <span className="badge badge-danger">{product.stock_quantity}</span>
-                    </td>
+                {lowStock.map((p) => (
+                  <tr key={p.id}>
+                    <td>{p.name}</td>
+                    <td><code>{p.sku}</code></td>
+                    <td><span className="badge badge-danger">{p.stock_quantity}</span></td>
                   </tr>
                 ))}
               </tbody>
@@ -121,7 +101,6 @@ function Dashboard() {
         </div>
       )}
 
-      {/* Recent Orders */}
       {orders.length > 0 && (
         <div className="recent-section">
           <h2>📋 Recent Orders</h2>

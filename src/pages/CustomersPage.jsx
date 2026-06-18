@@ -1,64 +1,41 @@
-/**
- * CustomersPage.jsx - Customers Management Page
- *
- * Features:
- * - List all customers in a table
- * - Add a new customer via a form
- * - Edit an existing customer
- * - Delete a customer
- */
-
 import { useState, useEffect } from "react";
 import api from "../api";
 
 function CustomersPage() {
-  // State for the list of customers
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // State for the add/edit form
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-  });
+  const [formData, setFormData] = useState({ name: "", email: "", phone: "" });
 
-  // Fetch customers when the component loads
-  useEffect(() => {
-    fetchCustomers();
-  }, []);
+  useEffect(() => { loadCustomers(); }, []);
 
-  async function fetchCustomers() {
+  async function loadCustomers() {
     try {
       setLoading(true);
-      const response = await api.get("/customers/");
-      setCustomers(response.data);
+      const res = await api.get("/customers/");
+      setCustomers(res.data);
     } catch (err) {
       setError("Failed to fetch customers");
-      console.error(err);
     } finally {
       setLoading(false);
     }
   }
 
-  // Handle form input changes
   function handleChange(e) {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   }
 
-  // Open form to add a new customer
-  function handleAdd() {
+  function openAddForm() {
     setEditingId(null);
     setFormData({ name: "", email: "", phone: "" });
     setShowForm(true);
     setError("");
   }
 
-  // Open form to edit an existing customer
-  function handleEdit(customer) {
+  function openEditForm(customer) {
     setEditingId(customer.id);
     setFormData({
       name: customer.name,
@@ -69,7 +46,6 @@ function CustomersPage() {
     setError("");
   }
 
-  // Submit the form (create or update)
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
@@ -86,38 +62,25 @@ function CustomersPage() {
       } else {
         await api.post("/customers/", body);
       }
-      await fetchCustomers();
+      await loadCustomers();
       setShowForm(false);
-      setFormData({ name: "", email: "", phone: "" });
       setEditingId(null);
     } catch (err) {
-      const message = err.response?.data?.detail || "Something went wrong";
-      setError(message);
+      setError(err.response?.data?.detail || "Something went wrong");
     }
   }
 
-  // Delete a customer
-  async function handleDelete(customerId) {
+  async function handleDelete(id) {
     if (!window.confirm("Are you sure you want to delete this customer?")) return;
     try {
-      await api.delete(`/customers/${customerId}`);
-      await fetchCustomers();
+      await api.delete(`/customers/${id}`);
+      await loadCustomers();
     } catch (err) {
-      const message = err.response?.data?.detail || "Failed to delete customer";
-      setError(message);
+      setError(err.response?.data?.detail || "Failed to delete customer");
     }
   }
 
-  // Cancel form
-  function handleCancel() {
-    setShowForm(false);
-    setEditingId(null);
-    setError("");
-  }
-
-  if (loading) {
-    return <div className="loading">Loading customers...</div>;
-  }
+  if (loading) return <div className="loading">Loading customers...</div>;
 
   return (
     <div className="page">
@@ -126,15 +89,11 @@ function CustomersPage() {
           <h1>Customers</h1>
           <p className="page-subtitle">Manage your customer directory</p>
         </div>
-        <button className="btn btn-primary" onClick={handleAdd}>
-          + Add Customer
-        </button>
+        <button className="btn btn-primary" onClick={openAddForm}>+ Add Customer</button>
       </div>
 
-      {/* Error message */}
       {error && <div className="error-message">{error}</div>}
 
-      {/* Add/Edit Form */}
       {showForm && (
         <div className="form-card">
           <h2>{editingId ? "Edit Customer" : "Add New Customer"}</h2>
@@ -142,45 +101,26 @@ function CustomersPage() {
             <div className="form-grid">
               <div className="form-group">
                 <label htmlFor="name">Full Name</label>
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="e.g. John Doe"
-                  required
-                />
+                <input id="name" name="name" type="text" value={formData.name}
+                  onChange={handleChange} placeholder="e.g. John Doe" required />
               </div>
               <div className="form-group">
                 <label htmlFor="email">Email</label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="e.g. john@example.com"
-                  required
-                />
+                <input id="email" name="email" type="email" value={formData.email}
+                  onChange={handleChange} placeholder="e.g. john@example.com" required />
               </div>
               <div className="form-group">
                 <label htmlFor="phone">Phone (optional)</label>
-                <input
-                  id="phone"
-                  name="phone"
-                  type="text"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  placeholder="e.g. +1-555-0123"
-                />
+                <input id="phone" name="phone" type="text" value={formData.phone}
+                  onChange={handleChange} placeholder="e.g. +1-555-0123" />
               </div>
             </div>
             <div className="form-actions">
               <button type="submit" className="btn btn-primary">
                 {editingId ? "Update" : "Create"}
               </button>
-              <button type="button" className="btn btn-secondary" onClick={handleCancel}>
+              <button type="button" className="btn btn-secondary"
+                onClick={() => { setShowForm(false); setEditingId(null); setError(""); }}>
                 Cancel
               </button>
             </div>
@@ -188,7 +128,6 @@ function CustomersPage() {
         </div>
       )}
 
-      {/* Customers Table */}
       {customers.length === 0 ? (
         <div className="empty-state">
           <p>No customers yet. Click "Add Customer" to get started.</p>
@@ -198,36 +137,22 @@ function CustomersPage() {
           <table>
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Created</th>
-                <th>Actions</th>
+                <th>ID</th><th>Name</th><th>Email</th><th>Phone</th>
+                <th>Created</th><th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {customers.map((customer) => (
-                <tr key={customer.id}>
-                  <td>{customer.id}</td>
-                  <td>{customer.name}</td>
-                  <td>{customer.email}</td>
-                  <td>{customer.phone || "—"}</td>
-                  <td>{new Date(customer.created_at).toLocaleDateString()}</td>
+              {customers.map((c) => (
+                <tr key={c.id}>
+                  <td>{c.id}</td>
+                  <td>{c.name}</td>
+                  <td>{c.email}</td>
+                  <td>{c.phone || "—"}</td>
+                  <td>{new Date(c.created_at).toLocaleDateString()}</td>
                   <td>
                     <div className="action-buttons">
-                      <button
-                        className="btn btn-small btn-edit"
-                        onClick={() => handleEdit(customer)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="btn btn-small btn-delete"
-                        onClick={() => handleDelete(customer.id)}
-                      >
-                        Delete
-                      </button>
+                      <button className="btn btn-small btn-edit" onClick={() => openEditForm(c)}>Edit</button>
+                      <button className="btn btn-small btn-delete" onClick={() => handleDelete(c.id)}>Delete</button>
                     </div>
                   </td>
                 </tr>
